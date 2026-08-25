@@ -6,16 +6,6 @@
 [![Project Maintenance][maintenance-shield]][user_profile]
 [![BuyMeCoffee][buymecoffeebadge]][buymecoffee]
 
-> ## ⚠️ This is a patched fork
->
-> This is a fork of [JohNan/home-assistant-flichub](https://github.com/JohNan/home-assistant-flichub), created specifically to fix the **Flic Twist dial (rotation) not working**.
->
-> On the upstream integration, turning a Flic Twist that's bound to a Flic Hub Studio virtual device causes the integration to crash while creating the entity, with `RuntimeError: loop ... is not the running loop` and `coroutine 'async_add_entities' was never awaited`. The rotation events reach Home Assistant, but the virtual-device entity is never created, so the dial does nothing.
->
-> **This fork fixes that** by marshalling the dynamic entity creation onto the Home Assistant event loop. It also adds a per-Twist choice of how the dial responds — see "Setting up the Flic Twist dial" below.
->
-> If/when the crash fix is merged upstream, prefer the original repository.
-
 ## Prerequisites
 
 Add the tcp client to Flic Hub found in this repo: https://github.com/JohNan/pyflichub-tcpclient
