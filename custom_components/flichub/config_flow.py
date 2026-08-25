@@ -14,6 +14,8 @@ from homeassistant.helpers.device_registry import format_mac
 from pyflichub.client import FlicHubTcpClient
 from .const import CLIENT_READY_TIMEOUT
 from .const import CONF_DEADBAND_ENTER, CONF_DEADBAND_EXIT
+from .const import CONF_DIAL_MODE_PREFIX, DIAL_MODE_DIRECT, DIAL_MODE_JOYSTICK
+from .const import DATA_VIRTUAL_DEVICES
 from .const import DOMAIN
 from .const import PLATFORMS
 
@@ -179,6 +181,22 @@ class FlicHubOptionsFlowHandler(config_entries.OptionsFlow):
         }
         schema[vol.Optional(CONF_DEADBAND_ENTER, default=self.options.get(CONF_DEADBAND_ENTER, 2))] = int
         schema[vol.Optional(CONF_DEADBAND_EXIT, default=self.options.get(CONF_DEADBAND_EXIT, 5))] = int
+
+        # One direct/joystick dial-mode dropdown per known virtual light device,
+        # so each Twist's virtual dial light can be configured independently.
+        virtual_devices = self.config_entry.data.get(DATA_VIRTUAL_DEVICES, [])
+        seen_ids = set()
+        for device_info in virtual_devices:
+            if device_info.get("dimmable_type") != "Light":
+                continue
+            virtual_device_id = device_info.get("virtual_device_id")
+            if not virtual_device_id or virtual_device_id in seen_ids:
+                continue
+            seen_ids.add(virtual_device_id)
+            key = f"{CONF_DIAL_MODE_PREFIX}{virtual_device_id}"
+            schema[vol.Optional(key, default=self.options.get(key, DIAL_MODE_DIRECT))] = vol.In(
+                [DIAL_MODE_DIRECT, DIAL_MODE_JOYSTICK]
+            )
 
         return self.async_show_form(
             step_id="user",

@@ -14,6 +14,11 @@ CLIENT_READY_TIMEOUT = 20.0
 CONF_DEADBAND_ENTER = "deadband_enter"
 CONF_DEADBAND_EXIT = "deadband_exit"
 
+# Per-device dial control mode (see config_flow.py / light.py)
+CONF_DIAL_MODE_PREFIX = "dial_mode_"
+DIAL_MODE_DIRECT = "direct"
+DIAL_MODE_JOYSTICK = "joystick"
+
 # Icons
 ICON = "mdi:format-quote-close"
 
