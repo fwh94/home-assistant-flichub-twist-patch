@@ -10,9 +10,9 @@
 >
 > This is a fork of [JohNan/home-assistant-flichub](https://github.com/JohNan/home-assistant-flichub), created specifically to fix the **Flic Twist dial (rotation) not working**.
 >
-> On the upstream integration, turning a Flic Twist that's bound to a Flic Hub Studio virtual device causes the integration to crash while creating the light entity, with `RuntimeError: loop ... is not the running loop` and `coroutine 'async_add_entities' was never awaited`. The rotation events reach Home Assistant, but the virtual-device light entity is never created, so the dial does nothing.
+> On the upstream integration, turning a Flic Twist that's bound to a Flic Hub Studio virtual device causes the integration to crash while creating the entity, with `RuntimeError: loop ... is not the running loop` and `coroutine 'async_add_entities' was never awaited`. The rotation events reach Home Assistant, but the virtual-device entity is never created, so the dial does nothing.
 >
-> **This fork fixes that** by marshalling the dynamic entity creation onto the Home Assistant event loop, so the Twist's virtual-device light entity is created cleanly and the dial can be used (e.g. to drive brightness). This fork also lets you choose, per Twist, how the dial responds — see "Dial response mode" below.
+> **This fork fixes that** by marshalling the dynamic entity creation onto the Home Assistant event loop. It also adds a per-Twist choice of how the dial responds — see "Setting up the Flic Twist dial" below.
 >
 > If/when the crash fix is merged upstream, prefer the original repository.
 
@@ -33,14 +33,15 @@ Add the url to the repository as a custom integration.
 6. Restart Home Assistant
 7. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Flic Hub"
 
-## Dial response mode
+## Setting up the Flic Twist dial
 
-If you have a Flic Twist, each one shows up as its own dropdown in Settings → Devices & Services → Flic Hub LR → Configure. Pick whichever feel matches how you want to use it:
+A Twist's rotation only works once it's bound to a **virtual device** — otherwise turning it does nothing. In the Flic app: open the Twist → its **Rotate** action → pick what to control (Brightness, Volume, Blind position, etc.) → **add devices** → **Flic Hub Studio** → **add a virtual device** (Light/Speaker/Blind) → give it a name → confirm it's assigned to Rotate.
 
-- **Direct** (the default) — turn the dial to a spot, and the light goes to that exact level, every time. Works like a normal dimmer knob on a lamp.
-- **Joystick** — turn the dial away from center and hold it there to make the light ramp up or down, the further you turn the faster it ramps; let go and it stops. Works more like a game controller's analog stick than a dimmer knob.
+Once set up, turning the dial drives a matching entity in Home Assistant (e.g. `light.living_room_twist_ha_lamp_dial`) in real time — read its state in an automation to control anything else.
 
-Most people want **Direct**. **Joystick** can feel nicer if you're adjusting several lights at once and want fine, held control rather than picking an exact spot each time.
+Each Twist also gets its own **dial response mode** dropdown in Settings → Devices & Services → Flic Hub LR → Configure:
+- **Direct** (default) — turn to a spot, get that exact level every time, like a normal knob.
+- **Joystick** — hold the dial off-center to ramp the value up/down, like a game controller stick.
 
 ### DHCP Discovery
 Your FlicHub should automatically be discovered as a new integration based on dhcp discovery.
