@@ -25,5 +25,5 @@
     "pyflichub-tcpclient==0.1.19",
     "infrared-protocols"
   ],
-  "version": "1.0.28-twist-patch"
+  "version": "v0.0.0"
 }
