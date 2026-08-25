@@ -96,7 +96,7 @@ class FlicHubVirtualLight(FlicHubButtonEntity, LightEntity):
 
     Supports two independently-selectable dial control modes, set per
     virtual device via the integration's options flow (key
-    "dial_mode_<virtual_device_id>"):
+    "Twist dial mode: <virtual_device_id>"):
 
     - "direct" (default): the Twist's raw rotation value (a float 0.0-1.0)
       is applied to brightness immediately and proportionally, with no
