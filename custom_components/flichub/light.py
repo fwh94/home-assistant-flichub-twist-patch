@@ -7,10 +7,8 @@ from homeassistant.core import HomeAssistant, Event, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from pyflichub.flichub import FlicHubInfo
-from pyflichub.twist_controller import RateDetentController
 
 from . import FlicHubEntryData
-from .const import CONF_DEADBAND_ENTER, CONF_DEADBAND_EXIT
 from .const import DOMAIN, DATA_BUTTONS, DATA_HUB, DATA_VIRTUAL_DEVICES, get_button_by_id
 from .const import EVENT_VIRTUAL_DEVICE_UPDATE, EVENT_DATA_META_DATA, EVENT_DATA_VALUES
 from .entity import FlicHubButtonEntity
@@ -81,8 +79,24 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_devices):
     )
 
 
+def _clamp01(x: float) -> float:
+    """Clamp a value to the 0.0-1.0 range."""
+    if x < 0.0:
+        return 0.0
+    if x > 1.0:
+        return 1.0
+    return x
+
+
 class FlicHubVirtualLight(FlicHubButtonEntity, LightEntity):
-    """Flic Hub Virtual Light class."""
+    """Flic Hub Virtual Light class.
+
+    DIRECT MAPPING VARIANT: the Twist's raw rotation value (always a float
+    0.0-1.0) is applied to brightness immediately and proportionally, with
+    no ramping, centering, or joystick-style rate control. Turning the dial
+    to a given position always yields the same brightness, every time -
+    like a normal rotary dimmer rather than an analog-stick accelerator.
+    """
 
     _attr_has_entity_name = True
     _attr_color_mode = ColorMode.HS
@@ -102,22 +116,6 @@ class FlicHubVirtualLight(FlicHubButtonEntity, LightEntity):
         self._brightness = 255
         self._hs_color = None
         self._color_temp = None
-        self._brightness_controller = RateDetentController(
-            cfg={
-                "minOutPct": 0,
-                "maxOutPct": 100,
-                "deadbandEnter": config_entry.options.get(CONF_DEADBAND_ENTER, 2),
-                "deadbandExit": config_entry.options.get(CONF_DEADBAND_EXIT, 5),
-            },
-            on_change_callback=self._on_brightness_change,
-            loop=hass.loop
-        )
-
-    def _on_brightness_change(self, new_brightness_pct: int) -> None:
-        """Handle smoothed brightness changes from the RateDetentController."""
-        self._brightness = int((new_brightness_pct / 100.0) * 255)
-        self._is_on = self._brightness > 0
-        self.schedule_update_ha_state()
 
     async def async_added_to_hass(self) -> None:
         """Run when entity about to be added to hass."""
@@ -125,12 +123,6 @@ class FlicHubVirtualLight(FlicHubButtonEntity, LightEntity):
         self.async_on_remove(
             self.hass.bus.async_listen(EVENT_VIRTUAL_DEVICE_UPDATE, self._event_callback)
         )
-
-    async def async_will_remove_from_hass(self) -> None:
-        """Run when entity will be removed from hass."""
-        await super().async_will_remove_from_hass()
-        if self._brightness_controller:
-            self._brightness_controller.stop()
 
     def _event_callback(self, event: Event):
         """Handle virtual device update event."""
@@ -143,10 +135,11 @@ class FlicHubVirtualLight(FlicHubButtonEntity, LightEntity):
 
         values = event.data.get(EVENT_DATA_VALUES, {})
 
-        # The values themselves are always floating point numbers between 0 and 1
-        # Extract and convert values
+        # The values themselves are always floating point numbers between 0 and 1.
+        # Direct mapping: apply immediately and proportionally, no smoothing/ramping.
         if "brightness" in values:
-            self._brightness_controller.update_raw(values["brightness"] * 100)
+            self._brightness = int(round(_clamp01(values["brightness"]) * 255))
+            self._is_on = self._brightness > 0
 
         if "hue" in values and "saturation" in values:
             self._hs_color = (values["hue"] * 360, values["saturation"] * 100)
@@ -190,11 +183,9 @@ class FlicHubVirtualLight(FlicHubButtonEntity, LightEntity):
         if "brightness" in kwargs:
             values["brightness"] = kwargs["brightness"] / 255.0
             self._brightness = kwargs["brightness"]
-            self._brightness_controller.actual_out_pct = values["brightness"] * 100
         else:
             values["brightness"] = self._brightness / 255.0 if self._brightness else 1.0
             self._brightness = self._brightness if self._brightness else 255
-            self._brightness_controller.actual_out_pct = values["brightness"] * 100
 
         if "hs_color" in kwargs:
             values["hue"] = kwargs["hs_color"][0] / 360.0
@@ -215,6 +206,5 @@ class FlicHubVirtualLight(FlicHubButtonEntity, LightEntity):
         client = self.coordinator.hass.data[DOMAIN][self.config_entry.entry_id].client
         values = {"brightness": 0.0}
         self._is_on = False
-        self._brightness_controller.actual_out_pct = 0.0
         client.send_virtual_device_update_state("Light", self._virtual_device_id, values)
         self.async_write_ha_state()
