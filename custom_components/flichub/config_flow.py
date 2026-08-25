@@ -184,16 +184,25 @@ class FlicHubOptionsFlowHandler(config_entries.OptionsFlow):
 
         # One direct/joystick dial-mode dropdown per known virtual light device,
         # so each Twist's virtual dial light can be configured independently.
+        #
+        # Keyed on (button_id, virtual_device_id) rather than virtual_device_id
+        # alone: button_id is the Twist's Bluetooth address, a hardware
+        # identifier that can never collide between two physical devices, even
+        # if two different Twists' virtual devices happen to share a name.
         virtual_devices = self.config_entry.data.get(DATA_VIRTUAL_DEVICES, [])
-        seen_ids = set()
+        seen = set()
         for device_info in virtual_devices:
             if device_info.get("dimmable_type") != "Light":
                 continue
             virtual_device_id = device_info.get("virtual_device_id")
-            if not virtual_device_id or virtual_device_id in seen_ids:
+            button_id = device_info.get("button_id")
+            if not virtual_device_id or not button_id:
                 continue
-            seen_ids.add(virtual_device_id)
-            key = f"{CONF_DIAL_MODE_PREFIX}{virtual_device_id}"
+            dedupe_key = (button_id, virtual_device_id)
+            if dedupe_key in seen:
+                continue
+            seen.add(dedupe_key)
+            key = f"{CONF_DIAL_MODE_PREFIX}{virtual_device_id} [{button_id}]"
             schema[vol.Optional(key, default=self.options.get(key, DIAL_MODE_DIRECT))] = vol.In(
                 [DIAL_MODE_DIRECT, DIAL_MODE_JOYSTICK]
             )

@@ -96,7 +96,7 @@ class FlicHubVirtualLight(FlicHubButtonEntity, LightEntity):
 
     Supports two independently-selectable dial control modes, set per
     virtual device via the integration's options flow (key
-    "Twist dial mode: <virtual_device_id>"):
+    "Twist dial mode: <virtual_device_id> [<button_bdaddr>]"):
 
     - "direct" (default): the Twist's raw rotation value (a float 0.0-1.0)
       is applied to brightness immediately and proportionally, with no
@@ -127,8 +127,11 @@ class FlicHubVirtualLight(FlicHubButtonEntity, LightEntity):
         self._hs_color = None
         self._color_temp = None
 
-        # Per-device dial mode (see class docstring)
-        dial_mode_key = f"{CONF_DIAL_MODE_PREFIX}{virtual_device_id}"
+        # Per-device dial mode (see class docstring). Keyed on
+        # (button bdaddr, virtual_device_id) to stay collision-proof even if
+        # two different Twists' virtual devices happen to share a name -
+        # this must exactly match the key format built in config_flow.py.
+        dial_mode_key = f"{CONF_DIAL_MODE_PREFIX}{virtual_device_id} [{self.button.bdaddr}]"
         self._dial_mode = config_entry.options.get(dial_mode_key, DIAL_MODE_DIRECT)
 
         self._brightness_controller = None
