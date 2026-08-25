@@ -12,7 +12,7 @@
 >
 > On the upstream integration, turning a Flic Twist that's bound to a Flic Hub Studio virtual device causes the integration to crash while creating the light entity, with `RuntimeError: loop ... is not the running loop` and `coroutine 'async_add_entities' was never awaited`. The rotation events reach Home Assistant, but the virtual-device light entity is never created, so the dial does nothing.
 >
-> **This fork fixes that** by marshalling the dynamic entity creation onto the Home Assistant event loop, so the Twist's virtual-device light entity is created cleanly and the dial can be used (e.g. to drive brightness). This fork also maps the dial directly and proportionally to brightness, with no ramping or centering behavior.
+> **This fork fixes that** by marshalling the dynamic entity creation onto the Home Assistant event loop, so the Twist's virtual-device light entity is created cleanly and the dial can be used (e.g. to drive brightness). This fork also lets you choose, per Twist, how the dial responds — see "Dial response mode" below.
 >
 > If/when the crash fix is merged upstream, prefer the original repository.
 
@@ -32,6 +32,15 @@ Add the url to the repository as a custom integration.
 5. Place the files you downloaded in the new directory (folder) you created.
 6. Restart Home Assistant
 7. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Flic Hub"
+
+## Dial response mode
+
+If you have a Flic Twist, each one shows up as its own dropdown in Settings → Devices & Services → Flic Hub LR → Configure. Pick whichever feel matches how you want to use it:
+
+- **Direct** (the default) — turn the dial to a spot, and the light goes to that exact level, every time. Works like a normal dimmer knob on a lamp.
+- **Joystick** — turn the dial away from center and hold it there to make the light ramp up or down, the further you turn the faster it ramps; let go and it stops. Works more like a game controller's analog stick than a dimmer knob.
+
+Most people want **Direct**. **Joystick** can feel nicer if you're adjusting several lights at once and want fine, held control rather than picking an exact spot each time.
 
 ### DHCP Discovery
 Your FlicHub should automatically be discovered as a new integration based on dhcp discovery.
